@@ -6,25 +6,18 @@ import crypto from "crypto";
 const emptyToNull = (v: unknown) =>
   typeof v === "string" && v.trim() === "" ? null : v;
 
-const toInt = (v: unknown) => {
-  if (typeof v === "number") return v;
-  if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) {
-    return Number(v);
+const toBool = (v: unknown) => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if (s === "true" || s === "1" || s === "yes" || s === "on") return true;
+    if (s === "false" || s === "0" || s === "no" || s === "off") return false;
   }
   return v;
 };
 
-const EditSchema = z.object({
-  token: z.string().min(10),
-  full_name: z.string().min(2).max(120),
-  phone: z.preprocess(emptyToNull, z.string().max(50).nullable().optional()),
-  company: z.preprocess(emptyToNull, z.string().max(120).nullable().optional()),
-  guests: z
-    .preprocess(toInt, z.number().int().min(0).max(10))
-    .optional()
-    .default(0),
-});
-
+// NOTE: randomBytes(n) => hex length is 2*n characters.
+// We want a reasonably long token for edit links.
 function makeToken(bytes = 24) {
   return crypto.randomBytes(bytes).toString("hex");
 }
@@ -36,6 +29,46 @@ function isLockedNow() {
   const lockAt = new Date(eventStart.getTime() - 24 * 60 * 60 * 1000);
   return Date.now() >= lockAt.getTime();
 }
+
+const EditSchema = z
+  .object({
+    token: z.string().min(10),
+
+    full_name: z
+      .string()
+      .transform((s) => s.trim())
+      .refine((s) => s.length >= 2, "Name too short.")
+      .refine((s) => s.length <= 120, "Name too long."),
+
+    phone: z.preprocess(emptyToNull, z.string().max(50).nullable().optional()),
+    company: z.preprocess(
+      emptyToNull,
+      z.string().max(120).nullable().optional()
+    ),
+
+    // +1 UX:
+    bringing_plus_one: z
+      .preprocess(toBool, z.boolean())
+      .optional()
+      .default(false),
+    plus_one_full_name: z
+      .preprocess(emptyToNull, z.string().max(120).nullable().optional())
+      .optional()
+      .default(null),
+  })
+  .strict()
+  .superRefine((val, ctx) => {
+    if (val.bringing_plus_one) {
+      const name = (val.plus_one_full_name ?? "").trim();
+      if (name.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["plus_one_full_name"],
+          message: "Please enter the first and last name for your +1.",
+        });
+      }
+    }
+  });
 
 export async function POST(req: Request) {
   try {
@@ -51,7 +84,7 @@ export async function POST(req: Request) {
 
     const { data: row, error: findErr } = await supabaseAdmin
       .from("registrations")
-      .select("id,edit_token_expires_at")
+      .select("id, edit_token_expires_at, metadata")
       .eq("edit_token", body.token)
       .maybeSingle();
 
@@ -71,6 +104,7 @@ export async function POST(req: Request) {
     const exp = row.edit_token_expires_at
       ? new Date(row.edit_token_expires_at)
       : null;
+
     if (exp && exp.getTime() < Date.now()) {
       return NextResponse.json(
         { ok: false, message: "Token expired." },
@@ -78,17 +112,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ rotate token so old link becomes invalid
+    // Rotate token (old link becomes invalid)
     const new_token = makeToken(24);
     const new_expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
+
+    const prevMeta =
+      row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+
+    const nextMeta = {
+      ...prevMeta,
+      bringing_plus_one: body.bringing_plus_one,
+      plus_one_full_name: body.bringing_plus_one
+        ? (body.plus_one_full_name ?? "").trim()
+        : null,
+    };
+
+    // Optional: keep "guests" column but clamp it to 0/1 to match new UI
+    const guests = body.bringing_plus_one ? 1 : 0;
 
     const { error: updErr } = await supabaseAdmin
       .from("registrations")
       .update({
-        full_name: body.full_name.trim(),
+        full_name: body.full_name,
         phone: body.phone ? String(body.phone).trim() : null,
         company: body.company ? String(body.company).trim() : null,
-        guests: body.guests,
+
+        guests, // if you want to keep the int column in sync
+        metadata: nextMeta,
+
         status: "updated",
         edit_token: new_token,
         edit_token_expires_at: new_expires.toISOString(),
@@ -110,6 +161,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
     return NextResponse.json(
       { ok: false, message: "Unexpected error." },
       { status: 500 }

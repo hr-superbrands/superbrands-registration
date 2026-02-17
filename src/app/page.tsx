@@ -52,7 +52,6 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *  /public/logos/partneri/<file>
  */
 const SUPERBRENDOVI_LOGOS = [
-  // EDIT THESE FILENAMES
   "/logos/superbrendovi/24_sata.png",
   "/logos/superbrendovi/bilicericlogoresize.png",
   "/logos/superbrendovi/apoteka.hr-horizontalno-logo.svg",
@@ -71,7 +70,6 @@ const SUPERBRENDOVI_LOGOS = [
 ];
 
 const PARTNERI_LOGOS = [
-  // EDIT THESE FILENAMES
   "/logos/partneri/thebouquet.png",
   "/logos/partneri/benussi.png",
   "/logos/partneri/carwiz.jpg",
@@ -208,24 +206,22 @@ export default function HomePage() {
       </header>
 
       <section className="relative z-40 mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl flex-col items-center justify-center gap-6 px-4 pb-10 md:px-8">
-        {/* ✅ NEW: Logo marquee header */}
+        {/* ✅ NEW: Logo grids */}
         <div className="w-full max-w-[900px]">
-          <LogoMarqueeBlock
+          <LogoGridBlock
             title={t.superbrandsTitle}
             logos={SUPERBRENDOVI_LOGOS}
             size="lg"
-            speedSeconds={32}
           />
           <div className="h-4" />
-          <LogoMarqueeBlock
+          <LogoGridBlock
             title={t.partnersTitle}
             logos={PARTNERI_LOGOS}
             size="sm"
-            speedSeconds={40}
           />
         </div>
 
-        {/* Existing hint */}
+        {/* Existing hint + envelope/card */}
         <div className="w-full max-w-[900px]">
           <div className="mb-5 text-center text-white/90">
             <div className="text-sm md:text-base">
@@ -340,68 +336,54 @@ export default function HomePage() {
   );
 }
 
-/* ===================== NEW COMPONENTS ===================== */
+/* ===================== NEW: GRID COMPONENT ===================== */
 
-function LogoMarqueeBlock({
+function LogoGridBlock({
   title,
   logos,
   size,
-  speedSeconds,
 }: {
   title: string;
   logos: string[];
   size: "lg" | "sm";
-  speedSeconds: number;
 }) {
-  const items = useMemo(() => [...logos, ...logos], [logos]);
+  const tileH = size === "lg" ? "h-12 sm:h-14 md:h-16" : "h-9 sm:h-10 md:h-11";
 
-  const h = size === "lg" ? "h-9 sm:h-10 md:h-11" : "h-6 sm:h-7 md:h-8";
+  const cols =
+    size === "lg"
+      ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5"
+      : "grid-cols-4 sm:grid-cols-5 md:grid-cols-6";
 
-  // ✅ narrower spacing
   const gap =
-    size === "lg" ? "gap-5 sm:gap-6 md:gap-7" : "gap-4 sm:gap-5 md:gap-6";
+    size === "lg" ? "gap-2.5 sm:gap-3 md:gap-4" : "gap-2 sm:gap-2.5 md:gap-3";
 
   return (
     <div
       className="rounded-2xl ring-1 ring-black/10 px-4 py-4 shadow-[0_18px_55px_-35px_rgba(0,0,0,0.55)]"
       style={{ backgroundColor: "#d2ad55" }}
     >
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div className="text-xs sm:text-sm font-semibold tracking-wide text-black/90">
           {title}
         </div>
       </div>
 
-      <div className="relative overflow-hidden">
-        {/* Edge fades (gold -> transparent) */}
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-[#d2ad55] to-transparent" />
-        <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#d2ad55] to-transparent" />
-
-        <motion.div
-          className={`flex ${gap} ${h} items-center`}
-          style={{ willChange: "transform" }}
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{
-            duration: speedSeconds,
-            ease: "linear",
-            repeat: Infinity,
-          }}
-        >
-          {items.map((src, idx) => (
-            <div
-              key={`${src}-${idx}`}
-              className={`relative ${h} aspect-[3/1] shrink-0`}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="(max-width: 768px) 120px, 160px"
-                className="object-contain"
-              />
-            </div>
-          ))}
-        </motion.div>
+      <div className={`grid ${cols} ${gap}`}>
+        {logos.map((src, idx) => (
+          <div
+            key={`${src}-${idx}`}
+            className={`relative ${tileH} w-full overflow-hidden rounded-xl bg-white/25 ring-1 ring-black/10`}
+          >
+            <Image
+              src={src}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw"
+              className="object-contain p-2"
+              priority={idx < 8}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

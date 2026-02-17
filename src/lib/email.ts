@@ -2,8 +2,24 @@ import { Resend } from "resend";
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
+/**
+ * Returns correct base URL:
+ * - Uses PUBLIC_APP_URL if set
+ * - Else uses VERCEL_URL in production
+ * - Falls back to localhost only in dev
+ */
 export function appUrl(path: string) {
-  const base = process.env.PUBLIC_APP_URL || "http://localhost:3000";
+  const isProd = process.env.NODE_ENV === "production";
+
+  let base =
+    process.env.PUBLIC_APP_URL ||
+    (isProd && process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : null) ||
+    "http://localhost:3000";
+
+  if (base.endsWith("/")) base = base.slice(0, -1);
+
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

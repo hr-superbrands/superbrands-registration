@@ -19,6 +19,17 @@ function getLockInfo() {
   };
 }
 
+type RegistrationRow = {
+  full_name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  guests: number;
+  edit_token_expires_at: string | null;
+  status: string;
+  metadata: any | null;
+};
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
@@ -34,9 +45,11 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabaseAdmin
     .from("registrations")
-    .select("full_name,email,phone,company,guests,edit_token_expires_at,status")
+    .select(
+      "full_name,email,phone,company,guests,metadata,edit_token_expires_at,status"
+    )
     .eq("edit_token", token)
-    .maybeSingle();
+    .maybeSingle<RegistrationRow>();
 
   if (error) {
     return NextResponse.json(
@@ -54,6 +67,7 @@ export async function GET(req: Request) {
   const exp = data.edit_token_expires_at
     ? new Date(data.edit_token_expires_at)
     : null;
+
   if (exp && exp.getTime() < Date.now()) {
     return NextResponse.json(
       { ok: false, message: "Token expired." },
@@ -61,10 +75,33 @@ export async function GET(req: Request) {
     );
   }
 
+  // ✅ Pull +1 details from metadata (fallback to guests if needed)
+  const meta = (data.metadata ?? {}) as Record<string, any>;
+  const plus_one =
+    typeof meta.plus_one === "boolean" ? meta.plus_one : (data.guests ?? 0) > 0;
+
+  const plus_one_full_name =
+    typeof meta.plus_one_full_name === "string" &&
+    meta.plus_one_full_name.trim()
+      ? meta.plus_one_full_name.trim()
+      : null;
+
   return NextResponse.json({
     ok: true,
     locked,
     lockReason,
-    registration: data,
+    registration: {
+      full_name: data.full_name,
+      email: data.email,
+      phone: data.phone,
+      company: data.company,
+      guests: data.guests, // still returned if you need it
+      status: data.status,
+      edit_token_expires_at: data.edit_token_expires_at,
+
+      // ✅ new fields your edit UI can use directly
+      plus_one,
+      plus_one_full_name,
+    },
   });
 }
