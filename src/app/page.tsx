@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 type Lang = "hr" | "en";
 
@@ -22,6 +22,8 @@ const copy = {
     register: "Registracija",
     close: "Zatvori",
     lang: "Jezik",
+    superbrandsTitle: "Superbrendovi",
+    partnersTitle: "Partneri",
   },
   en: {
     openHint: "Click the envelope",
@@ -37,10 +39,50 @@ const copy = {
     register: "Register",
     close: "Close",
     lang: "Language",
+    superbrandsTitle: "Superbrands",
+    partnersTitle: "Partners",
   },
 } as const;
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Put files in:
+ *  /public/logos/superbrendovi/<file>
+ *  /public/logos/partneri/<file>
+ */
+const SUPERBRENDOVI_LOGOS = [
+  // EDIT THESE FILENAMES
+  "/logos/superbrendovi/24_sata.png",
+  "/logos/superbrendovi/bilicericlogoresize.png",
+  "/logos/superbrendovi/apoteka.hr-horizontalno-logo.svg",
+  "/logos/superbrendovi/BOBIS logo_novo-1.png",
+  "/logos/superbrendovi/dalmare_logo.png.png",
+  "/logos/superbrendovi/eurovilla.png",
+  "/logos/superbrendovi/fravero.png",
+  "/logos/superbrendovi/Gaia-Naturelle-logo-GOLD-1.png",
+  "/logos/superbrendovi/ljekarne-lukacina-logo2 (1).png",
+  "/logos/superbrendovi/mmg logo horizontalni žuti v2.png",
+  "/logos/superbrendovi/SIMUNI LOGO.png",
+  "/logos/superbrendovi/tikves-logo.png",
+  "/logos/superbrendovi/Tommy-1.png",
+  "/logos/superbrendovi/nomadik.svg",
+  "/logos/superbrendovi/lisak111.png",
+];
+
+const PARTNERI_LOGOS = [
+  // EDIT THESE FILENAMES
+  "/logos/partneri/thebouquet.png",
+  "/logos/partneri/benussi.png",
+  "/logos/partneri/carwiz.jpg",
+  "/logos/partneri/danijela-logo-transparent.png",
+  "/logos/partneri/barun.png",
+  "/logos/partneri/Duchess-logo.png",
+  "/logos/partneri/innectologo.png",
+  "/logos/partneri/logo-header-masteryachting.svg",
+  "/logos/partneri/logo.svg",
+  "/logos/partneri/zecevic (1).png",
+];
 
 export default function HomePage() {
   const [lang, setLang] = useState<Lang>("hr");
@@ -56,12 +98,21 @@ export default function HomePage() {
   const SIZE_W = 600;
   const SIZE_H = 400;
 
+  // Mobile detector
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   async function openSequence() {
     if (busy || opened) return;
     setBusy(true);
 
     setOpened(true);
-    await wait(520); // delay between flap opening and slide away
+    await wait(520);
     setSlideAway(true);
 
     setBusy(false);
@@ -73,6 +124,29 @@ export default function HomePage() {
     setCardFlipped(false);
     setBusy(false);
   }
+
+  // Measure envelope wrapper height so card base height matches rendered size
+  const envRef = useRef<HTMLDivElement | null>(null);
+  const [envPxH, setEnvPxH] = useState<number>(SIZE_H);
+
+  useEffect(() => {
+    if (!envRef.current) return;
+    const el = envRef.current;
+
+    const ro = new ResizeObserver(() => {
+      const rect = el.getBoundingClientRect();
+      if (rect.height && Number.isFinite(rect.height)) setEnvPxH(rect.height);
+    });
+
+    ro.observe(el);
+    const rect = el.getBoundingClientRect();
+    if (rect.height && Number.isFinite(rect.height)) setEnvPxH(rect.height);
+
+    return () => ro.disconnect();
+  }, []);
+
+  const cardExtraH = slideAway && isMobile ? 200 : 0;
+  const cardBoxH = envPxH + cardExtraH;
 
   return (
     <main className="relative min-h-screen w-full overflow-hidden">
@@ -104,6 +178,7 @@ export default function HomePage() {
           <span className="hidden text-xs text-white/70 md:block">
             {t.lang}
           </span>
+
           <button
             onClick={() => setLang("hr")}
             className={`rounded-full px-3 py-1 text-sm transition ${
@@ -116,6 +191,7 @@ export default function HomePage() {
           >
             HR
           </button>
+
           <button
             onClick={() => setLang("en")}
             className={`rounded-full px-3 py-1 text-sm transition ${
@@ -131,18 +207,31 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="relative z-40 mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl items-center justify-center px-4 pb-10 md:px-8">
+      <section className="relative z-40 mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl flex-col items-center justify-center gap-6 px-4 pb-10 md:px-8">
+        {/* ✅ NEW: Logo marquee header */}
         <div className="w-full max-w-[900px]">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            className="mb-5 text-center text-white/90"
-          >
+          <LogoMarqueeBlock
+            title={t.superbrandsTitle}
+            logos={SUPERBRENDOVI_LOGOS}
+            size="lg"
+            speedSeconds={32}
+          />
+          <div className="h-4" />
+          <LogoMarqueeBlock
+            title={t.partnersTitle}
+            logos={PARTNERI_LOGOS}
+            size="sm"
+            speedSeconds={40}
+          />
+        </div>
+
+        {/* Existing hint */}
+        <div className="w-full max-w-[900px]">
+          <div className="mb-5 text-center text-white/90">
             <div className="text-sm md:text-base">
               {opened ? t.flipHint : t.openHint}
             </div>
-          </motion.div>
+          </div>
 
           <div className="relative mx-auto h-[900px] w-full">
             {/* Arrow */}
@@ -161,7 +250,9 @@ export default function HomePage() {
             </AnimatePresence>
 
             <div className="absolute left-1/2 top-[190px] z-[500] -translate-x-1/2">
+              {/* Envelope wrapper */}
               <div
+                ref={envRef}
                 className="relative"
                 style={{
                   width: `min(92vw, ${SIZE_W}px)`,
@@ -173,20 +264,29 @@ export default function HomePage() {
                   <EnvelopeBackRect />
                 </div>
 
-                {/* E-card */}
-                <div className="absolute inset-[16px] z-10 pointer-events-auto">
+                {/* Card wrapper */}
+                <motion.div
+                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto ${
+                    slideAway ? "z-[2000]" : "z-10"
+                  }`}
+                  style={{ width: "min(92vw, 600px)" }}
+                  initial={false}
+                  animate={{ height: cardBoxH }}
+                  transition={{ type: "spring", stiffness: 220, damping: 22 }}
+                >
                   <Card3D
                     flipped={cardFlipped}
                     setFlipped={setCardFlipped}
                     title={title}
                     t={t}
-                    showFlip={slideAway}
+                    enableFlip={slideAway}
+                    enableLinks={slideAway}
                   />
-                </div>
+                </motion.div>
 
                 {/* Envelope shell */}
                 <motion.div
-                  className="absolute inset-0 z-30 pointer-events-none"
+                  className="absolute inset-0 z-[100] pointer-events-none select-none"
                   initial={false}
                   animate={{
                     y: slideAway ? 900 : 0,
@@ -240,7 +340,74 @@ export default function HomePage() {
   );
 }
 
-/* ---------------- Envelope parts (600x400) ---------------- */
+/* ===================== NEW COMPONENTS ===================== */
+
+function LogoMarqueeBlock({
+  title,
+  logos,
+  size,
+  speedSeconds,
+}: {
+  title: string;
+  logos: string[];
+  size: "lg" | "sm";
+  speedSeconds: number;
+}) {
+  const items = useMemo(() => [...logos, ...logos], [logos]);
+
+  const h = size === "lg" ? "h-9 sm:h-10 md:h-11" : "h-6 sm:h-7 md:h-8";
+
+  // ✅ narrower spacing
+  const gap =
+    size === "lg" ? "gap-5 sm:gap-6 md:gap-7" : "gap-4 sm:gap-5 md:gap-6";
+
+  return (
+    <div
+      className="rounded-2xl ring-1 ring-black/10 px-4 py-4 shadow-[0_18px_55px_-35px_rgba(0,0,0,0.55)]"
+      style={{ backgroundColor: "#d2ad55" }}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-xs sm:text-sm font-semibold tracking-wide text-black/90">
+          {title}
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden">
+        {/* Edge fades (gold -> transparent) */}
+        <div className="pointer-events-none absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-[#d2ad55] to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#d2ad55] to-transparent" />
+
+        <motion.div
+          className={`flex ${gap} ${h} items-center`}
+          style={{ willChange: "transform" }}
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{
+            duration: speedSeconds,
+            ease: "linear",
+            repeat: Infinity,
+          }}
+        >
+          {items.map((src, idx) => (
+            <div
+              key={`${src}-${idx}`}
+              className={`relative ${h} aspect-[3/1] shrink-0`}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 120px, 160px"
+                className="object-contain"
+              />
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Envelope parts (600x400) ===================== */
 
 function EnvelopeBackRect() {
   return (
@@ -349,37 +516,27 @@ function EnvelopeTopFlap({ opened }: { opened: boolean }) {
   );
 }
 
-/* ---------------- Card ---------------- */
+/* ===================== Card ===================== */
 
 function Card3D({
   flipped,
   setFlipped,
   title,
   t,
-  showFlip,
+  enableFlip,
+  enableLinks,
 }: {
   flipped: boolean;
   setFlipped: (v: boolean) => void;
   title: string;
   t: any;
-  showFlip: boolean;
+  enableFlip: boolean;
+  enableLinks: boolean;
 }) {
+  const router = useRouter();
+
   return (
     <div className="relative h-full w-full" style={{ perspective: 1200 }}>
-      {/* ✅ Bulletproof clickable overlay when flipped */}
-      {flipped && (
-        <div className="pointer-events-none absolute inset-0 z-[99999]">
-          <div className="absolute bottom-6 left-6 right-6 pointer-events-auto">
-            <Link
-              href="/register"
-              className="block w-full rounded-2xl bg-black px-5 py-3 text-center text-base font-medium text-white shadow-md hover:bg-black/90 active:scale-[0.99]"
-            >
-              {t.register}
-            </Link>
-          </div>
-        </div>
-      )}
-
       <motion.div
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ type: "spring", stiffness: 240, damping: 22 }}
@@ -407,7 +564,7 @@ function Card3D({
               alt="Card logo"
               width={120}
               height={40}
-              className="h-8 w-auto md:h-9"
+              className="h-24 w-auto md:h-32"
               priority
             />
           </div>
@@ -418,11 +575,11 @@ function Card3D({
             </div>
           </div>
 
-          {showFlip && (
+          {enableFlip && (
             <button
               type="button"
               onClick={() => setFlipped(!flipped)}
-              className="absolute right-3 top-1/2 z-[9999] -translate-y-1/2 rounded-full bg-white/95 p-3 shadow-lg ring-1 ring-black/10 active:scale-[0.98]"
+              className="absolute right-3 top-3 z-[9999] rounded-full bg-white/95 p-3 shadow-lg ring-1 ring-black/10 active:scale-[0.98]"
               aria-label="Flip card"
             >
               <span className="block text-black">{flipped ? "↩" : "→"}</span>
@@ -436,14 +593,16 @@ function Card3D({
           style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
         >
           <div className="absolute inset-0 opacity-[0.04] bg-[radial-gradient(circle_at_1px_1px,black_1px,transparent_0)] [background-size:14px_14px]" />
-          <div className="flex h-full flex-col p-6">
+
+          <div className="relative flex h-full flex-col p-4 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs text-black/60">{t.backTitle}</div>
-                <div className="mt-1 text-xl font-semibold text-black">
+                <div className="mt-1 text-lg sm:text-xl font-semibold text-black">
                   {title}
                 </div>
               </div>
+
               <Image
                 src="/logo-card.png"
                 alt="Card logo"
@@ -453,7 +612,7 @@ function Card3D({
               />
             </div>
 
-            <div className="mt-5 space-y-3 text-sm text-black/75">
+            <div className="mt-4 space-y-3 text-sm text-black/75">
               {t.details.map((row: any) => (
                 <div
                   key={row.k}
@@ -465,9 +624,24 @@ function Card3D({
               ))}
             </div>
 
-            <p className="mt-auto text-center text-xs text-black/55 pt-6">
-              {t.lang}: HR / EN
-            </p>
+            <div className="mt-auto pt-4">
+              <button
+                type="button"
+                onClick={() => enableLinks && router.push("/register")}
+                className={`w-full rounded-2xl px-5 py-3 text-center text-base font-medium shadow-md active:scale-[0.99] ${
+                  enableLinks
+                    ? "bg-black text-white hover:bg-black/90 cursor-pointer"
+                    : "bg-black/30 text-white/60 cursor-not-allowed"
+                }`}
+                aria-disabled={!enableLinks}
+              >
+                {t.register}
+              </button>
+
+              <p className="mt-2 text-center text-xs text-black/55">
+                {t.lang}: HR / EN
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -475,7 +649,7 @@ function Card3D({
   );
 }
 
-/* ---------------- Arrow ---------------- */
+/* ===================== Arrow ===================== */
 
 function SwirlArrow() {
   return (
