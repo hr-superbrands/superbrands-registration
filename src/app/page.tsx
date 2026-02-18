@@ -7,6 +7,11 @@ import { useRouter } from "next/navigation";
 
 type Lang = "hr" | "en";
 
+type LogoItem = {
+  src: string;
+  href: string;
+};
+
 const copy = {
   hr: {
     openHint: "Klikni na kuvertu",
@@ -51,36 +56,69 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *  /public/logos/superbrendovi/<file>
  *  /public/logos/partneri/<file>
  */
-const SUPERBRENDOVI_LOGOS = [
-  "/logos/superbrendovi/24_sata.png",
-  "/logos/superbrendovi/apoteka-hr.png",
-  "/logos/superbrendovi/biliceric.png",
-  "/logos/superbrendovi/BOBIS.png",
-  "/logos/superbrendovi/dalmare.png",
-  "/logos/superbrendovi/eurovilla.png",
-  "/logos/superbrendovi/fravero.png",
-  "/logos/superbrendovi/Gaia-Naturelle.png",
-  "/logos/superbrendovi/lisak.png",
-  "/logos/superbrendovi/ljekarne-lukacin.png",
-  "/logos/superbrendovi/mmg.png",
-  "/logos/superbrendovi/nomadik.png",
-  "/logos/superbrendovi/SIMUNI LOGO.png",
-  "/logos/superbrendovi/tikves.png",
-  "/logos/superbrendovi/tommy.png",
+const SUPERBRENDOVI_LOGOS: LogoItem[] = [
+  { src: "/logos/superbrendovi/24_sata.png", href: "https://www.24sata.hr" },
+  {
+    src: "/logos/superbrendovi/apoteka-hr.png",
+    href: "https://www.apoteka.hr",
+  },
+  { src: "/logos/superbrendovi/biliceric.png", href: "https://bilic-eric.hr" },
+  { src: "/logos/superbrendovi/BOBIS.png", href: "https://www.bobis.hr" },
+  { src: "/logos/superbrendovi/dalmare.png", href: "https://dalmare.hr" },
+  {
+    src: "/logos/superbrendovi/eurovilla.png",
+    href: "https://www.eurovilla.hr",
+  },
+  { src: "/logos/superbrendovi/fravero.png", href: "https://fravero.hr" },
+  {
+    src: "/logos/superbrendovi/Gaia-Naturelle.png",
+    href: "https://www.gaianaturelle.hr",
+  },
+  { src: "/logos/superbrendovi/lisak.png", href: "https://cateringlisak.hr" },
+  {
+    src: "/logos/superbrendovi/ljekarne-lukacin.png",
+    href: "https://ljekarne-lukacin.hr",
+  },
+  { src: "/logos/superbrendovi/mmg.png", href: "https://makromikrogrupa.hr" },
+  { src: "/logos/superbrendovi/nomadik.png", href: "https://nomadik.travel" },
+  {
+    src: "/logos/superbrendovi/SIMUNI LOGO.png",
+    href: "https://www.camping-simuni.hr/hr/",
+  },
+  {
+    src: "/logos/superbrendovi/tikves.png",
+    href: "https://tikves.com.mk/en/home/",
+  },
+  { src: "/logos/superbrendovi/tommy.png", href: "https://www.tommy.hr" },
 ];
 
-const PARTNERI_LOGOS = [
-  "/logos/partneri/barun.png",
-  "/logos/partneri/benussi.png",
-  "/logos/partneri/carwiz.png",
-  "/logos/partneri/danijela martinovic.png",
-  "/logos/partneri/Duchess.png",
-  "/logos/partneri/innecto.png",
-  "/logos/partneri/masteryachting.png",
-  "/logos/partneri/niveleta.png",
-  "/logos/partneri/riversidegarden.png",
-  "/logos/partneri/thebouquet.png",
-  "/logos/partneri/zecevic.png",
+const PARTNERI_LOGOS: LogoItem[] = [
+  {
+    src: "/logos/partneri/barun.png",
+    href: "https://zvecevo1921.hr/barun.html",
+  },
+  { src: "/logos/partneri/benussi.png", href: "https://autobenussi.hr" },
+  { src: "/logos/partneri/carwiz.png", href: "https://www.carwiz.hr" },
+  {
+    src: "/logos/partneri/danijela martinovic.png",
+    href: "https://www.danijelamartinovic.hr",
+  },
+  { src: "/logos/partneri/Duchess.png", href: "https://www.duchess.hr" },
+  { src: "/logos/partneri/innecto.png", href: "https://innecto.hr" },
+  {
+    src: "/logos/partneri/masteryachting.png",
+    href: "https://www.masteryachting.hr",
+  },
+  { src: "/logos/partneri/niveleta.png", href: "https://www.niveleta-92.com" },
+  {
+    src: "/logos/partneri/riversidegarden.png",
+    href: "https://riversidegarden.hr",
+  },
+  {
+    src: "/logos/partneri/thebouquet.png",
+    href: "https://www.instagram.com/thebouquetcroatia/",
+  },
+  { src: "/logos/partneri/zecevic.png", href: "https://zecevic-law-firm.hr" },
 ];
 
 export default function HomePage() {
@@ -207,7 +245,7 @@ export default function HomePage() {
       </header>
 
       <section className="relative z-40 mx-auto flex min-h-[calc(100vh-72px)] max-w-6xl flex-col items-center justify-center gap-6 px-4 pb-10 md:px-8">
-        {/* ✅ NEW: Logo grids */}
+        {/* ✅ Logo grids with links */}
         <div className="w-full max-w-[900px]">
           <LogoGridBlock
             title={t.superbrandsTitle}
@@ -337,7 +375,7 @@ export default function HomePage() {
   );
 }
 
-/* ===================== NEW: GRID COMPONENT ===================== */
+/* ===================== GRID COMPONENT (with links) ===================== */
 
 function LogoGridBlock({
   title,
@@ -345,7 +383,7 @@ function LogoGridBlock({
   size,
 }: {
   title: string;
-  logos: string[];
+  logos: LogoItem[];
   size: "lg" | "sm";
 }) {
   const tileH = size === "lg" ? "h-12 sm:h-14 md:h-16" : "h-9 sm:h-10 md:h-11";
@@ -370,21 +408,44 @@ function LogoGridBlock({
       </div>
 
       <div className={`grid ${cols} ${gap}`}>
-        {logos.map((src, idx) => (
-          <div
-            key={`${src}-${idx}`}
-            className={`relative ${tileH} w-full overflow-hidden rounded-xl bg-white/25 ring-1 ring-black/10`}
-          >
-            <Image
-              src={src}
-              alt=""
-              fill
-              sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw"
-              className="object-contain p-2"
-              priority={idx < 8}
-            />
-          </div>
-        ))}
+        {logos.map((logo, idx) => {
+          const Tile = (
+            <div
+              className={`relative ${tileH} w-full overflow-hidden rounded-xl bg-white/25 ring-1 ring-black/10 transition hover:bg-white/40`}
+            >
+              <Image
+                src={logo.src}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12vw"
+                className="object-contain p-2"
+                priority={idx < 8}
+              />
+            </div>
+          );
+
+          // If no href is provided, just render the tile (safe fallback)
+          if (!logo.href) {
+            return (
+              <div key={`${logo.src}-${idx}`} className="w-full">
+                {Tile}
+              </div>
+            );
+          }
+
+          return (
+            <a
+              key={`${logo.src}-${idx}`}
+              href={logo.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full"
+              aria-label={`Open ${title} link`}
+            >
+              {Tile}
+            </a>
+          );
+        })}
       </div>
     </div>
   );
