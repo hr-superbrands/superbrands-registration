@@ -107,7 +107,7 @@ const PARTNERI_LOGOS: LogoItem[] = [
   { src: "/logos/partneri/innecto.png", href: "https://innecto.hr" },
   {
     src: "/logos/partneri/masteryachting.png",
-    href: "https://www.masteryachting.hr",
+    href: "https://www.masteryachting.com",
   },
   { src: "/logos/partneri/niveleta.png", href: "https://www.niveleta-92.com" },
   {
