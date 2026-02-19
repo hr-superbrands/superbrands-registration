@@ -16,8 +16,6 @@ const toBool = (v: unknown) => {
   return v;
 };
 
-// NOTE: randomBytes(n) => hex length is 2*n characters.
-// We want a reasonably long token for edit links.
 function makeToken(bytes = 24) {
   return crypto.randomBytes(bytes).toString("hex");
 }
@@ -46,11 +44,11 @@ const EditSchema = z
       z.string().max(120).nullable().optional()
     ),
 
-    // +1 UX:
     bringing_plus_one: z
       .preprocess(toBool, z.boolean())
       .optional()
       .default(false),
+
     plus_one_full_name: z
       .preprocess(emptyToNull, z.string().max(120).nullable().optional())
       .optional()
@@ -112,7 +110,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Rotate token (old link becomes invalid)
     const new_token = makeToken(24);
     const new_expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
 
@@ -127,7 +124,6 @@ export async function POST(req: Request) {
         : null,
     };
 
-    // Optional: keep "guests" column but clamp it to 0/1 to match new UI
     const guests = body.bringing_plus_one ? 1 : 0;
 
     const { error: updErr } = await supabaseAdmin
@@ -136,10 +132,8 @@ export async function POST(req: Request) {
         full_name: body.full_name,
         phone: body.phone ? String(body.phone).trim() : null,
         company: body.company ? String(body.company).trim() : null,
-
-        guests, // if you want to keep the int column in sync
+        guests,
         metadata: nextMeta,
-
         status: "updated",
         edit_token: new_token,
         edit_token_expires_at: new_expires.toISOString(),
