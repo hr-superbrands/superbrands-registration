@@ -48,6 +48,7 @@ export async function GET(req: Request) {
     .select(
       "full_name,email,phone,company,guests,metadata,edit_token_expires_at,status"
     )
+
     .eq("edit_token", token)
     .maybeSingle<RegistrationRow>();
 

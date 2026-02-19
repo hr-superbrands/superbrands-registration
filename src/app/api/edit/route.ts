@@ -44,11 +44,8 @@ const EditSchema = z
       z.string().max(120).nullable().optional()
     ),
 
-    bringing_plus_one: z
-      .preprocess(toBool, z.boolean())
-      .optional()
-      .default(false),
-
+    // ✅ same as register
+    plus_one: z.preprocess(toBool, z.boolean()).optional().default(false),
     plus_one_full_name: z
       .preprocess(emptyToNull, z.string().max(120).nullable().optional())
       .optional()
@@ -56,7 +53,7 @@ const EditSchema = z
   })
   .strict()
   .superRefine((val, ctx) => {
-    if (val.bringing_plus_one) {
+    if (val.plus_one) {
       const name = (val.plus_one_full_name ?? "").trim();
       if (name.length < 2) {
         ctx.addIssue({
@@ -102,7 +99,6 @@ export async function POST(req: Request) {
     const exp = row.edit_token_expires_at
       ? new Date(row.edit_token_expires_at)
       : null;
-
     if (exp && exp.getTime() < Date.now()) {
       return NextResponse.json(
         { ok: false, message: "Token expired." },
@@ -110,6 +106,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // rotate token
     const new_token = makeToken(24);
     const new_expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14);
 
@@ -118,13 +115,14 @@ export async function POST(req: Request) {
 
     const nextMeta = {
       ...prevMeta,
-      bringing_plus_one: body.bringing_plus_one,
-      plus_one_full_name: body.bringing_plus_one
+      plus_one: body.plus_one,
+      plus_one_full_name: body.plus_one
         ? (body.plus_one_full_name ?? "").trim()
         : null,
     };
 
-    const guests = body.bringing_plus_one ? 1 : 0;
+    // keep guests synced (legacy 0/1)
+    const guests = body.plus_one ? 1 : 0;
 
     const { error: updErr } = await supabaseAdmin
       .from("registrations")
@@ -155,7 +153,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
     return NextResponse.json(
       { ok: false, message: "Unexpected error." },
       { status: 500 }
