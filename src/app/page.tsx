@@ -256,7 +256,7 @@ export default function HomePage() {
           <LogoGridBlock
             title={t.partnersTitle}
             logos={PARTNERI_LOGOS}
-            size="sm"
+            size="lg"
           />
         </div>
 
