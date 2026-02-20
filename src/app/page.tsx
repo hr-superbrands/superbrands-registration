@@ -100,6 +100,7 @@ const PARTNERI_LOGOS: LogoItem[] = [
   { src: "/logos/partneri/bennuxlogo.png", href: "https://bennux.hr" },
   { src: "/logos/partneri/benussi.png", href: "https://autobenussi.hr" },
   { src: "/logos/partneri/Carzzy_logo.png", href: "https://carzzy.hr" },
+  { src: "/logos/partneri/carwiz.png", href: "https://www.carwiz.hr/hr/" },
   {
     src: "/logos/partneri/danijela martinovic.png",
     href: "https://www.danijelamartinovic.hr",
