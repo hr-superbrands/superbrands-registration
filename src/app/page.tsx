@@ -107,6 +107,7 @@ const PARTNERI_LOGOS: LogoItem[] = [
   },
   { src: "/logos/partneri/Duchess.png", href: "https://www.duchess.hr" },
   { src: "/logos/partneri/innecto.png", href: "https://innecto.hr" },
+  { src: "/logos/partneri/jana-nails.png", href: "https://www.nails-jana.com" },
   {
     src: "/logos/partneri/masteryachting.png",
     href: "https://www.masteryachting.com",
