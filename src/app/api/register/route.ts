@@ -4,6 +4,12 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import crypto from "crypto";
 import { resend, appUrl, registrationEmailHtml } from "@/lib/email";
 
+/**
+ * ✅ Hard close at midnight when Feb 28 starts (Europe/Sarajevo UTC+01:00 right now).
+ * This blocks *all* direct POSTs, even if someone bypasses the UI.
+ */
+const REGISTRATION_DEADLINE = new Date("2026-02-28T00:00:00+01:00");
+
 const emptyToUndefined = (v: unknown) => {
   if (v === null || v === undefined) return undefined;
   if (typeof v === "string" && v.trim() === "") return undefined;
@@ -61,6 +67,14 @@ function makeToken(bytes = 32) {
 }
 
 export async function POST(req: Request) {
+  // ✅ server-side cutoff
+  if (new Date() >= REGISTRATION_DEADLINE) {
+    return NextResponse.json(
+      { ok: false, message: "Registration closed." },
+      { status: 403 }
+    );
+  }
+
   try {
     const json = await req.json();
     const data = RegistrationSchema.parse(json);

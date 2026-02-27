@@ -6,6 +6,12 @@ import { useMemo, useState } from "react";
 
 type Lang = "hr" | "en";
 
+/**
+ * ✅ Registration hard-deadline (Europe/Sarajevo = UTC+01:00 right now)
+ * Closes at midnight when Feb 28 starts.
+ */
+const REGISTRATION_DEADLINE = new Date("2026-02-28T00:00:00+01:00");
+
 const copy = {
   hr: {
     title: "Registracija",
@@ -28,6 +34,12 @@ const copy = {
     required: "Obavezno polje.",
     invalidEmail: "Neispravan e-mail.",
     plusOneRequired: "Unesite ime i prezime za +1.",
+
+    // ✅ closed state
+    closedTitle: "Registracija je zatvorena",
+    closedBody:
+      "Hvala na interesu. Rok za prijavu je istekao (28.02.2026 u 00:00).",
+    closedCta: "Povratak na pozivnicu",
   },
   en: {
     title: "Registration",
@@ -50,6 +62,12 @@ const copy = {
     required: "This field is required.",
     invalidEmail: "Invalid email address.",
     plusOneRequired: "Please enter first and last name for your +1.",
+
+    // ✅ closed state
+    closedTitle: "Registration is closed",
+    closedBody:
+      "Thank you for your interest. The registration deadline has passed (Feb 28, 2026 at 00:00).",
+    closedCta: "Back to invitation",
   },
 } as const;
 
@@ -60,6 +78,9 @@ function isValidEmail(v: string) {
 export default function RegisterPage() {
   const [lang, setLang] = useState<Lang>("hr");
   const t = copy[lang];
+
+  // ✅ close registration UI
+  const isClosed = new Date() >= REGISTRATION_DEADLINE;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -103,6 +124,14 @@ export default function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // ✅ client-side hard stop (still enforced server-side too)
+    if (isClosed) {
+      setError(
+        lang === "hr" ? "Registracija je zatvorena." : "Registration is closed."
+      );
+      return;
+    }
 
     if (!validate()) return;
 
@@ -200,7 +229,26 @@ export default function RegisterPage() {
       <section className="relative z-[10] mx-auto flex w-full max-w-6xl items-center justify-center px-4 pb-16 pt-6 md:px-8">
         <div className="w-full max-w-3xl">
           <div className="rounded-3xl bg-white/10 p-5 backdrop-blur-md ring-1 ring-white/15 shadow-[0_35px_110px_-65px_rgba(0,0,0,0.75)] sm:p-7">
-            {!done ? (
+            {/* ✅ CLOSED STATE */}
+            {isClosed ? (
+              <div className="py-8 text-center">
+                <h2 className="text-2xl font-semibold text-white">
+                  {t.closedTitle}
+                </h2>
+                <p className="mx-auto mt-3 max-w-xl text-sm text-white/80">
+                  {t.closedBody}
+                </p>
+
+                <div className="mt-6 flex justify-center">
+                  <Link
+                    href="/"
+                    className="rounded-2xl bg-white/10 px-6 py-3 text-sm text-white ring-1 ring-white/15 backdrop-blur-md hover:bg-white/15"
+                  >
+                    {t.closedCta}
+                  </Link>
+                </div>
+              </div>
+            ) : !done ? (
               <>
                 <div className="mb-6">
                   <h1 className="text-2xl font-semibold text-white">
